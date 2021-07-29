@@ -14,6 +14,9 @@ class Block_Controller(object):
     ShapeNone_index = 0
     CurrentShape_class = 0
     NextShape_class = 0
+    CurrentShape_index = 0 #sasa
+    shapeI_index = 0 #sasa
+    shapeL_index = 0 #sasa
 
     # GetNextMove is main function.
     # input
@@ -34,6 +37,7 @@ class Block_Controller(object):
         # current shape info
         CurrentShapeDirectionRange = GameStatus["block_info"]["currentShape"]["direction_range"]
         self.CurrentShape_class = GameStatus["block_info"]["currentShape"]["class"]
+        self.CurrentShape_index = GameStatus["block_info"]["currentShape"]["index"] # sasa
         # next shape info
         NextShapeDirectionRange = GameStatus["block_info"]["nextShape"]["direction_range"]
         self.NextShape_class = GameStatus["block_info"]["nextShape"]["class"]
@@ -43,6 +47,8 @@ class Block_Controller(object):
         self.board_data_width = GameStatus["field_info"]["width"]
         self.board_data_height = GameStatus["field_info"]["height"]
         self.ShapeNone_index = GameStatus["debug_info"]["shape_info"]["shapeNone"]["index"]
+        self.shapeI_index = GameStatus["debug_info"]["shape_info"]["shapeI"]["index"] #sasa
+        self.shapeL_index = GameStatus["debug_info"]["shape_info"]["shapeL"]["index"] #sasa
 
         # search best nextMove -->
         strategy = None
@@ -51,16 +57,28 @@ class Block_Controller(object):
         for direction0 in CurrentShapeDirectionRange:
             # search with x range
             x0Min, x0Max = self.getSearchXRange(self.CurrentShape_class, direction0)
-            for x0 in range(x0Min, x0Max):
-                # get board data, as if dropdown block
-                board = self.getBoard(self.board_backboard, self.CurrentShape_class, direction0, x0)
+            if (self.CurrentShape_index == self.shapeI_index) or (self.CurrentShape_index == self.shapeL_index): #sasa
+                for x0 in range(x0Min, x0Max):
+                    # get board data, as if dropdown block
+                   board = self.getBoard(self.board_backboard, self.CurrentShape_class, direction0, x0)
 
-                # evaluate board
-                EvalValue = self.calcEvaluationValueSample(board)
-                # update best move
-                if EvalValue > LatestEvalValue:
-                    strategy = (direction0, x0, 1, 1)
-                    LatestEvalValue = EvalValue
+                    # evaluate board
+                   EvalValue = self.calcEvaluationValueSample(board)
+                   # update best move
+                   if EvalValue > LatestEvalValue:
+                       strategy = (direction0, x0, 1, 1)
+                       LatestEvalValue = EvalValue
+            else: #sasa->
+                for x0 in range(x0Min, x0Max-1):
+                    # get board data, as if dropdown block
+                   board = self.getBoard(self.board_backboard, self.CurrentShape_class, direction0, x0)
+
+                    # evaluate board
+                   EvalValue = self.calcEvaluationValueSample(board)
+                   # update best move
+                   if EvalValue > LatestEvalValue:
+                       strategy = (direction0, x0, 1, 1)
+                       LatestEvalValue = EvalValue #<-sasa
 
                 ###test
                 ###for direction1 in NextShapeDirectionRange:
@@ -220,15 +238,14 @@ class Block_Controller(object):
 
         # calc Evaluation Value
         score = 0
-        score = score + fullLines * 10.0           # try to delete line 
-        score = score - nHoles * 1.0               # try not to make hole
-        score = score - nIsolatedBlocks * 1.0      # try not to make isolated block
-        score = score - absDy * 1.0                # try to put block smoothly
+        score = score + fullLines * fullLines * 2.0 # try to delete line #sasa 
+        score = score - nHoles * 5.0                # try not to make hole #sasa
+        score = score - nIsolatedBlocks * 1.0       # try not to make isolated block
+        score = score - absDy * 1.0                 # try to put block smoothly
         #score = score - maxDy * 0.3                # maxDy
         #score = score - maxHeight * 5              # maxHeight
         #score = score - stdY * 1.0                 # statistical data
         #score = score - stdDY * 0.01               # statistical data
-
         # print(score, fullLines, nHoles, nIsolatedBlocks, maxHeight, stdY, stdDY, absDy, BlockMaxY)
         return score
 
